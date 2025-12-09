@@ -65,5 +65,46 @@ Supported Commands:
 ## Usage
 1. **Build** Compile project using ARM toolchain (Code Composer Studio).
 2. **Connect** Connect to the board using a terminal emulator (e.g., PuTTY) with a baud rate of 115200 as specified in the `rtos.c` file to access the shell.
+
+## Demo Application & User Interface
+
+The project includes a sample application (`tasks.c`) demonstrating the RTOS capabilities. The system utilizes the board's LEDs to visualize thread states and uses the push buttons to trigger kernel events, context switches, and faults.
+
+### LED Status Indicators
+| LED Color | Behavior | Description |
+| :--- | :--- | :--- |
+| **Orange** | Toggles constantly | Indicates the **Idle Task** is running (lowest priority). |
+| **Green** | Toggles @ 4Hz | Indicates the `Flash4Hz` task is running. |
+| **Yellow** | Toggles/One-Shot | Controlled by **SW0** (Toggle) and **SW1** (One-shot pulse). |
+| **Red** | Toggles/Solid | Toggled by `LengthyFn` task; set Solid/Off by **SW0/SW1**. |
+| **Blue** | Toggles | controlled by the `Important` task (Highest Priority). |
+
+### Button Controls
+The 6 push buttons are mapped to specific kernel interactions to demonstrate synchronization, priority changes, and fault handling:
+
+| Button | Action | RTOS Feature |
+| :--- | :--- | :--- |
+| **SW0** | Toggle Yellow LED & Turn ON Red LED | Basic GPIO and Task communication. |
+| **SW1** | Signal `flashReq` semaphore & Turn OFF Red LED | **Semaphores:** Signals the `OneShot` task to run once. |
+| **SW2** | Restart `Flash4Hz` thread | **Thread Management:** Re-enables a killed task. |
+| **SW3** | Kill `Flash4Hz` thread | **Thread Management:** Terminates an active task. |
+| **SW4** | Change `LengthyFn` priority to 4 | **Priority Scheduling:** Dynamically changes task priority at runtime. |
+| **SW5** | Trigger Memory Write | **MPU Fault:** Attempts to write to protected OS memory (`0x20000000`), triggering a Hard Fault or MPU Fault to test exception handlers. |
+
+### 3. Shell Controls (Runtime Configuration)
+Connect via a terminal (115200 baud) to issue these commands that alter Kernel behavior on the fly:
+
+| Command | Arguments | Description | Example Usage |
+| :--- | :--- | :--- | :--- |
+| `ps` | N/A | Prints out Process Status, this includes the PID (hex), process name, state, sleep ticks (ms), and CPU % | `ps` |
+| `ipcs` | N/A | Prints out the status of mutexes and semaphores | `ipcs` |
+| `preempt` | `ON` \| `OFF` | Toggles Preemption. When **OFF**, tasks only switch when they `yield()` or block. When **ON**, the SysTick handler forces context switches. | `preempt OFF` (Observe Orange LED blink pattern change) |
+| `sched` | `PRIO` \| `RR` | Switches the scheduler algorithm. <br>**PRIO**: Highest priority task runs. <br>**RR**: Round-Robin scheduling (time slicing). | `sched RR` (See tasks share CPU equally regardless of priority) |
+| `pi` | `ON` \| `OFF` | Toggles **Priority Inheritance**. Prevents priority inversion when high-priority tasks wait on mutexes held by low-priority tasks. | `pi ON` |
+| `pidof` | `<Process_Name>` | Finds the Process ID (PID) of a named task. | `pidof Flash4Hz` |
+| `kill` | `<PID>` | Kills a task using its ID (hex). | `kill 0x20002150` |
+| `run` | `<Process_Name>` | Restarts a task using its name. | `run Idle` |
+| `reboot` | N/A | Performs a system reset. | `reboot` |
+
 ---
 *Note: This project was created for CSE4354/5392 at UT Arlington, Fall 2025.*
